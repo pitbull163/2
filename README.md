@@ -316,3 +316,126 @@ Array
 +
 +cofirmSMSCode
 
+
++    require_once("QIWIControl.php");
++    $qiwi = new QIWIControl("+79681234433", "myPwd1", "cookie_data", "payproxys.ru:3128", "account1:accPWD2211", true);
++    if(!$qiwi->login()){
++        if($err = $qiwi->getLastError()){
++            die("Failed to login into QIWI Wallet: " . $err['message']);
++        }
++        die("Failed to login into QIWI wallet.");
++    }
++    if(!($trInfo = $qiwi->transferMoney("+79680671122", "RUB", 1015.12, "Просто перевод"))){
++        die("Failed to transfer money to another QIWI wallet.");
++    }
++    echo "Transaction info:";
++    print_r($trInfo);
++
++Вывод работы функции:
++
++Array
++(
++    [id] => 7100329842
++    [state] => Array
++        (
++            [code] => AwaitingSMSConfirmation
++        )
++
++    [paymentId] => 1455195743806
++)
++
++cofirmSMSCode
++
++Функция подтверждает ранее инициированную транзакцию по СМС коду.
++
++Параметры функции:
++
++    $paymentId — Берется из другой функции, которая инициирует новую транзакцию. Например transferMoney;
++    $smsCode — Код из СМС. Нужно брать с мобильного телефона или же из скрипта — который напрямую работает с виртуальной СИМ-картой;
++
++Возвращаемые значения: Или true в случае успеха или false. Тогда ошибка сохраняется в lastErrorMsg и lastErrorCode.
++
++Пример работы функции:
++
++    require_once("QIWIControl.php");
++    $qiwi = new QIWIControl("+79681234433", "myPwd1", "cookie_data", "payproxys.ru:3128", "account1:accPWD2211", true);
++    if(!$qiwi->login()){
++        if($err = $qiwi->getLastError()){
++            die("Failed to login into QIWI Wallet: " . $err['message']);
++        }
++        die("Failed to login into QIWI wallet.");
++    }
++    if(!($trInfo = $qiwi->transferMoney("+79680671122", "RUB", 1015.12, "Просто перевод"))){
++        die("Failed to transfer money to another QIWI wallet.");
++    }
++    $paymentId = $trInfo['paymentId'];
++    //Код, пришедший по смс: 223344
++    if($qiwi->confirmSMSCode($paymentId, '223344')){
++        echo "Платеж успешно завершен!";
++    }else{
++        echo "Ошибка платежа: " . $qiwi->getLastError() . "\n";
++    }
++
++payProvider
++
++Функция переводит средства указанному провайдеру. С помощью данной функции можно оплачивать услуги мобильных операторов, интернета, жкх и др.
++
++Параметры функции:
++
++    $provider_id — Числовой код провайдера. Можно взять на сайте QIWI;
++    $currency — Валюта операции (RUB, USD, EUR, KAZ);
++    $amount — Сумма операции в указанной валюте;
++    $fields — Массив полей для передачи провайдеру;
++    $comments — Комментарий к переводу;
++
++Функция возвращает ассоциативный массив по аналогии с transferMoney.
++
++Функции обертки:
++
++    payBeeline($number, $currency, $amount, $comments);
++
++Пример работы функции:
++
++    require_once("QIWIControl.php");
++    $qiwi = new QIWIControl("+79681234433", "myPwd1", "cookie_data", "payproxys.ru:3128", "account1:accPWD2211", true);
++    if(!$qiwi->login()){
++        if($err = $qiwi->getLastError()){
++            die("Failed to login into QIWI Wallet: " . $err['message']);
++        }
++        die("Failed to login into QIWI wallet.");
++    }
++    //Пополнить билайн
++    $fields = array("account" => "+79681112255");
++    if(!($trInfo = $qiwi->payProvider(2, "RUB", 1015.12, $fields, "Пополняю счет себе"))){
++        die("Failed to transfer money to QIWI provider.");
++    }
++    $paymentId = $trInfo['paymentId'];
++
++getProviderByPhone
++
++Функция возвращает числовой код провайдера QIWI для последующего вызова функции payProvider.
++
++Параметры функции:
++
++    $phone — Номер телефона в полном формате включая знак +. Например «+79684443311«.
++
++Например Вам нужно пополнить счет телефона с номером +79685554411:
++
++    require_once("QIWIControl.php");
++    $qiwi = new QIWIControl("+79681234433", "myPwd1", "cookie_data", "payproxys.ru:3128", "account1:accPWD2211", true);
++    if(!$qiwi->login()){
++        if($err = $qiwi->getLastError()){
++            die("Failed to login into QIWI Wallet: " . $err['message']);
++        }
++        die("Failed to login into QIWI wallet.");
++    }
++    $phone = "+79681112255";
++    //Узнать код провайдера
++    $pid = $qiwi->getProviderByPhone($phone);
++    //Пополнить счет
++    $fields = array("account" => "+79681112255");
++    if(!($trInfo = $qiwi->payProvider($pid, "RUB", 1015.12, $fields, "Пополняю счет себе"))){
++        die("Failed to transfer money to QIWI provider.");
++    }
++    $paymentId = $trInfo['paymentId'];
++
